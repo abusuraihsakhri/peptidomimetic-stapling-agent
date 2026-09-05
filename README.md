@@ -67,11 +67,18 @@ python cli.py --task-id <value> --target <value> --primary <value> --secondary <
 
 ## 🛡️ Security & Enterprise Architecture
 
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
+* **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, emails, DOB patterns, and patient identifiers.
+* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition. Configure `AUDIT_SECRET_KEY` environment variable for production deployments.
 * **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
 * **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
 * **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
+* **Path Traversal Protection:** Safe file path resolution for batch processing operations.
+
+### Environment Variables
+
+| Variable | Description | Required |
+|:---------|:------------|:---------|
+| `AUDIT_SECRET_KEY` | Secret key for HMAC-SHA256 audit trail signing | Recommended for production |
 
 ---
 
@@ -86,7 +93,7 @@ pytest -v
 Execute high-throughput batch simulation benchmarks:
 
 ```bash
-python simulator.py --tasks 1000 --concurrency 8
+python simulator.py 1000
 ```
 
 ---
@@ -95,5 +102,5 @@ python simulator.py --tasks 1000 --concurrency 8
 
 ```bash
 docker build -t peptidomimetic-stapling-agent .
-docker run -p 8000:8000 peptidomimetic-stapling-agent
+docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key peptidomimetic-stapling-agent
 ```

@@ -63,3 +63,51 @@ def test_supervisor_consensus_and_audit():
     assert main(["audit", "--task-id", "CLI-TEST-01"]) == 0
     assert main(["chat", "Explain", "specifications"]) == 0
     assert main(["verify-audit"]) == 0
+
+
+def test_phi_guard_blocks_various_patterns():
+    """Test that PHI guard catches multiple sensitive data patterns."""
+    phi_samples = [
+        "Patient MRN-12345678",
+        "SSN 123-45-6789",
+        "Contact: 555-123-4567",
+        "Email: patient@example.com",
+        "DOB: 01/15/1985",
+        "Patient: John Smith",
+    ]
+    for sample in phi_samples:
+        with pytest.raises(SecurityException):
+            PHIGuard.assert_no_phi(sample)
+
+
+def test_phi_redaction():
+    """Test that PHI is properly redacted."""
+    text = "Patient MRN-12345678 called from 555-123-4567"
+    redacted = PHIGuard.redact_phi(text)
+    assert "MRN-12345678" not in redacted
+    assert "555-123-4567" not in redacted
+    assert "[REDACTED_IDENTIFIER]" in redacted
+
+
+def test_safe_resolve_path_exists():
+    """Test safe_resolve_path with existing file."""
+    from agents.base import safe_resolve_path
+    import os
+    result = safe_resolve_path("cli.py", must_exist=True)
+    assert os.path.isfile(result)
+
+
+def test_safe_resolve_path_not_found():
+    """Test safe_resolve_path raises for missing files."""
+    from agents.base import safe_resolve_path
+    with pytest.raises(FileNotFoundError):
+        safe_resolve_path("/nonexistent/path/file.csv", must_exist=True)
+
+
+def test_safe_resolve_path_traversal():
+    """Test safe_resolve_path resolves traversal attempts safely."""
+    from agents.base import safe_resolve_path
+    import os
+    # Should resolve to absolute path without raising for non-existent
+    result = safe_resolve_path("../cli.py", must_exist=False)
+    assert os.path.isabs(result)
