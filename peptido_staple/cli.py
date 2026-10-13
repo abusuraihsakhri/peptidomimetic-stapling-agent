@@ -11,6 +11,16 @@ from .agents import PeptidoStapleCoordinator
 coordinator = PeptidoStapleCoordinator()
 
 
+def parse_critical_flag(value: str) -> bool:
+    normalized = str(value).strip().lower()
+    if normalized in {"true", "1", "yes"}:
+        return True
+    if normalized in {"false", "0", "no", ""}:
+        return False
+    raise ValueError(f"Invalid is_critical_flag: {value!r}. Use true or false.")
+
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="peptidomimetic-stapling-agent", description="PeptidoStaple: Hydrocarbon Stapled Alpha-Helix Stability & Cell Penetration Agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -33,12 +43,29 @@ def main(argv=None):
     p_batch.add_argument("-i", "--input", required=True)
     p_batch.add_argument("-o", "--output", default="results.csv")
 
+    # Staple position screen (no chemical or experimental prediction).
+    p_design = subparsers.add_parser("design", help="Enumerate i,i+4 and i,i+7 position pairs")
+    p_design.add_argument("--sequence", required=True)
+    p_design.add_argument("--spacing", choices=["4", "7", "both"], default="both")
+
     # Serve
     p_serve = subparsers.add_parser("serve", help="Launch FastAPI REST server")
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8000)
 
     args = parser.parse_args(argv)
+
+    if args.command == "design":
+        from peptido_staple.staples import enumerate_staple_sites
+        spacings = (4, 7) if args.spacing == "both" else (int(args.spacing),)
+        try:
+            candidates = enumerate_staple_sites(args.sequence, spacings)
+        except ValueError as exc:
+            parser.error(str(exc))
+        print(json.dumps({"sequence": "".join(args.sequence.split()).upper(),
+                          "candidates": candidates, "candidate_count": len(candidates),
+                          "note": "Sequence-position screen only; not a validated predictor."}, indent=2))
+        return 0
 
     if args.command == "audit":
         payload = FrontierPayload(
@@ -52,7 +79,7 @@ def main(argv=None):
         dossier = coordinator.process(payload)
         print("=" * 80)
         print(f"  PEPTIDOSTAPLE: HYDROCARBON STAPLED ALPHA-HELIX STABILITY & CELL PENETRATION AGENT")
-        print(f"  Domain: Computational Chemistry & AI Drug Discovery | Standard: Verdine Hydrocarbon Stapling Geometry")
+        print(f"  Domain: Computational Chemistry & AI Drug Discovery | Standard: Project-defined heuristic thresholds (unvalidated)")
         print(f"  Task: {dossier['task_id']} | Status: [{dossier['overall_status']}] | Total Alerts: {dossier['total_alerts']}")
         print("=" * 80)
         for a in dossier["alerts"]:
@@ -77,7 +104,7 @@ def main(argv=None):
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
 
-        out_fields = fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]))
         out_rows = []
         for r in rows:
             payload = FrontierPayload(
@@ -86,7 +113,7 @@ def main(argv=None):
                 primary_metric=float(r.get("primary_metric", 15.0)),
                 secondary_metric=float(r.get("secondary_metric", 5.0)),
                 status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
+                is_critical_flag=parse_critical_flag(r.get("is_critical_flag", "")),
             )
             dossier = coordinator.process(payload)
             row_dict = dict(r)

@@ -93,7 +93,7 @@ class PeptidoStapleCoordinator:
             "critical_count": crit_count,
             "warning_count": warn_count,
             "alerts": [a.to_dict() for a in all_alerts],
-            "standard_specification": "Verdine Hydrocarbon Stapling Geometry",
+            "standard_specification": "Project-defined heuristic thresholds (unvalidated)",
             "consensus_summary": f"Consensus evaluation completed across 3 sub-agents with status [{status.value}].",
         }
 
@@ -105,6 +105,6 @@ class PeptidoStapleCoordinator:
         if "status" in q or "ledger" in q:
             return f"PeptidoStaple: Hydrocarbon Stapled Alpha-Helix Stability & Cell Penetration Agent currently managing {len(self.execution_ledger)} execution tasks in air-gapped memory."
         elif "standard" in q or "spec" in q:
-            return "Active runtime operating strictly according to Verdine Hydrocarbon Stapling Geometry specifications."
+            return "These are project-defined specifications only; no validated staple geometry is calculated."
         else:
             return f"PeptidoStaple: Hydrocarbon Stapled Alpha-Helix Stability & Cell Penetration Agent executive coordinator online. Zero-telemetry on-premises surveillance active."

@@ -2,9 +2,10 @@
 FastAPI REST API Server for Peptidomimetic Stapling Agent.
 """
 from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -12,9 +13,14 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Peptidomimetic Stapling Agent API",
-    description="Enterprise Distributed Component Platform (AI Drug Discovery, Structural Biology & Wet-Lab Robotics)",
+    description="Generic deterministic threshold audits; not validated peptide-property predictions",
     version="3.0.0-ENTERPRISE",
 )
+
+
+@app.exception_handler(SecurityException)
+async def sensitive_input_handler(request: Request, exc: SecurityException):
+    return JSONResponse(status_code=422, content={"detail": "Sensitive identifier detected; remove it and retry."})
 
 
 class ChatRequest(BaseModel):
@@ -23,7 +29,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "peptidomimetic-stapling-agent", "domain": "AI Drug Discovery, Structural Biology & Wet-Lab Robotics", "standard": "wwPDB / IUPAC / OpenSMILES / ISAC Standards", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "peptidomimetic-stapling-agent", "domain": "AI Drug Discovery, Structural Biology & Wet-Lab Robotics", "standard": "Project-defined heuristic thresholds (unvalidated)", "version": "3.0.0-ENTERPRISE"}
 
 
 @app.get("/metrics")
@@ -46,8 +52,10 @@ def api_chat(req: ChatRequest):
     try:
         ans = supervisor.query_supervisory_chat(req.query)
         return {"response": ans}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except SecurityException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Unable to process request") from exc
 
 
 @app.get("/api/audit/logs")

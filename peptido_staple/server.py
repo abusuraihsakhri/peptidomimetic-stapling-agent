@@ -15,7 +15,7 @@ def create_app():
 
         app = FastAPI(
             title="PeptidoStaple: Hydrocarbon Stapled Alpha-Helix Stability & Cell Penetration Agent",
-            description="Models i, i+4 and i, i+7 olefinic peptide stapling, calculating alpha-helical propensity, hydrophobic moment, and cellular uptake scores.",
+            description="Legacy generic-threshold audit. Staple position enumeration is provided separately by the sequence screen; no biochemical properties are predicted.",
             version="2.0.0-FRONTIER",
         )
 

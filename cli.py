@@ -12,6 +12,16 @@ from agents.base import AuditLogger, safe_resolve_path
 supervisor = SystemSupervisor(model_provider="mock")
 
 
+def parse_critical_flag(value: str) -> bool:
+    normalized = str(value).strip().lower()
+    if normalized in {"true", "1", "yes"}:
+        return True
+    if normalized in {"false", "0", "no", ""}:
+        return False
+    raise ValueError(f"Invalid is_critical_flag: {value!r}. Use true or false.")
+
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="peptidomimetic-stapling-agent", description="Peptidomimetic Stapling Agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -37,12 +47,29 @@ def main(argv=None):
     # Verify Audit
     subparsers.add_parser("verify-audit", help="Verify HMAC audit trail integrity")
 
+    # Staple position screen (no chemical or experimental prediction).
+    p_design = subparsers.add_parser("design", help="Enumerate i,i+4 and i,i+7 position pairs")
+    p_design.add_argument("--sequence", required=True)
+    p_design.add_argument("--spacing", choices=["4", "7", "both"], default="both")
+
     # Serve
     p_serve = subparsers.add_parser("serve", help="Launch FastAPI REST server")
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8000)
 
     args = parser.parse_args(argv)
+
+    if args.command == "design":
+        from peptido_staple.staples import enumerate_staple_sites
+        spacings = (4, 7) if args.spacing == "both" else (int(args.spacing),)
+        try:
+            candidates = enumerate_staple_sites(args.sequence, spacings)
+        except ValueError as exc:
+            parser.error(str(exc))
+        print(json.dumps({"sequence": "".join(args.sequence.split()).upper(),
+                          "candidates": candidates, "candidate_count": len(candidates),
+                          "note": "Sequence-position screen only; not a validated predictor."}, indent=2))
+        return 0
 
     if args.command == "audit":
         payload = SystemTaskPayload(
@@ -75,9 +102,12 @@ def main(argv=None):
 
     if args.command == "verify-audit":
         trail = AuditLogger.get_trail()
+        if not trail:
+            print("No audit blocks in this process; nothing to verify.")
+            return 1
         valid = AuditLogger.verify_integrity()
         print(f"Audit Trail Blocks: {len(trail)} | Cryptographic Integrity Verified: {valid}")
-        return 0
+        return 0 if valid else 1
 
     if args.command == "batch":
         input_path = safe_resolve_path(args.input, must_exist=True)
@@ -87,7 +117,7 @@ def main(argv=None):
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
 
-        out_fields = fieldnames + ["overall_urgency", "integrity_status", "total_alerts", "audit_hash"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_urgency", "integrity_status", "total_alerts", "audit_hash"]))
         out_rows = []
         for r in rows:
             payload = SystemTaskPayload(
@@ -96,7 +126,7 @@ def main(argv=None):
                 primary_metric=float(r.get("primary_metric", 15.0)),
                 secondary_metric=float(r.get("secondary_metric", 5.0)),
                 status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
+                is_critical_flag=parse_critical_flag(r.get("is_critical_flag", "")),
             )
             dossier = supervisor.process_task(payload)
             row_dict = dict(r)
