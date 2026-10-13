@@ -47,12 +47,29 @@ def main(argv=None):
     # Verify Audit
     subparsers.add_parser("verify-audit", help="Verify HMAC audit trail integrity")
 
+    # Staple position screen (no chemical or experimental prediction).
+    p_design = subparsers.add_parser("design", help="Enumerate i,i+4 and i,i+7 position pairs")
+    p_design.add_argument("--sequence", required=True)
+    p_design.add_argument("--spacing", choices=["4", "7", "both"], default="both")
+
     # Serve
     p_serve = subparsers.add_parser("serve", help="Launch FastAPI REST server")
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8000)
 
     args = parser.parse_args(argv)
+
+    if args.command == "design":
+        from peptido_staple.staples import enumerate_staple_sites
+        spacings = (4, 7) if args.spacing == "both" else (int(args.spacing),)
+        try:
+            candidates = enumerate_staple_sites(args.sequence, spacings)
+        except ValueError as exc:
+            parser.error(str(exc))
+        print(json.dumps({"sequence": "".join(args.sequence.split()).upper(),
+                          "candidates": candidates, "candidate_count": len(candidates),
+                          "note": "Sequence-position screen only; not a validated predictor."}, indent=2))
+        return 0
 
     if args.command == "audit":
         payload = SystemTaskPayload(
