@@ -102,9 +102,12 @@ def main(argv=None):
 
     if args.command == "verify-audit":
         trail = AuditLogger.get_trail()
+        if not trail:
+            print("No audit blocks in this process; nothing to verify.")
+            return 1
         valid = AuditLogger.verify_integrity()
         print(f"Audit Trail Blocks: {len(trail)} | Cryptographic Integrity Verified: {valid}")
-        return 0
+        return 0 if valid else 1
 
     if args.command == "batch":
         input_path = safe_resolve_path(args.input, must_exist=True)

@@ -44,6 +44,8 @@ Legacy rules use primary metric >25, secondary metric >12, a critical flag, and 
 
 ## Security and privacy
 
+The `verify-audit` CLI command checks only in-process records; separate CLI invocations do not share audit state. If no records exist, it exits with an error instead of claiming a successful verification.
+
 The Python API scans input fields (including nested attributes) for a limited set of sensitive identifier patterns and rejects matches. Pattern checks are not comprehensive de-identification or a guarantee of HIPAA compliance. Do not submit patient data. The API's in-memory audit log chains HMAC-SHA256 signatures and verifies them; records are **not durable across restarts**.
 
 For a Docker deployment, supply a strong signing secret through the environment (never commit the secret):
