@@ -12,6 +12,16 @@ from agents.base import AuditLogger, safe_resolve_path
 supervisor = SystemSupervisor(model_provider="mock")
 
 
+def parse_critical_flag(value: str) -> bool:
+    normalized = str(value).strip().lower()
+    if normalized in {"true", "1", "yes"}:
+        return True
+    if normalized in {"false", "0", "no", ""}:
+        return False
+    raise ValueError(f"Invalid is_critical_flag: {value!r}. Use true or false.")
+
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="peptidomimetic-stapling-agent", description="Peptidomimetic Stapling Agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -87,7 +97,7 @@ def main(argv=None):
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
 
-        out_fields = fieldnames + ["overall_urgency", "integrity_status", "total_alerts", "audit_hash"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_urgency", "integrity_status", "total_alerts", "audit_hash"]))
         out_rows = []
         for r in rows:
             payload = SystemTaskPayload(
@@ -96,7 +106,7 @@ def main(argv=None):
                 primary_metric=float(r.get("primary_metric", 15.0)),
                 secondary_metric=float(r.get("secondary_metric", 5.0)),
                 status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
+                is_critical_flag=parse_critical_flag(r.get("is_critical_flag", "")),
             )
             dossier = supervisor.process_task(payload)
             row_dict = dict(r)
