@@ -87,3 +87,10 @@ def test_api_rejects_sensitive_input_and_nonfinite_metrics():
     request["primary_metric"] = "NaN"
     response = client.post("/api/audit", json=request)
     assert response.status_code == 422
+
+
+def test_unimplemented_llm_providers_are_not_misrepresented():
+    from agents.llm_factory import LLMFactory
+    with pytest.raises(ValueError):
+        LLMFactory.create("openai")
+    assert "Mock response" in LLMFactory.create("mock").invoke("status")

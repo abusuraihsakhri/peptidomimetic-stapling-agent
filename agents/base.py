@@ -25,7 +25,7 @@ PHI_PATTERNS = [
 
 
 class SecurityException(Exception):
-    """Raised when outbound data violates HIPAA Safe Harbor or contains raw PHI."""
+    """Raised when data matches a configured sensitive-identifier pattern."""
     pass
 
 
@@ -141,7 +141,7 @@ class ActionExecutor:
 
 
 def safe_resolve_path(file_path: str, must_exist: bool = False) -> str:
-    """Resolve and validate a file path to prevent path traversal attacks."""
+    """Canonicalize a user-supplied path; does not confine it to a directory."""
     import os.path
     resolved = os.path.realpath(os.path.abspath(file_path))
     if must_exist and not os.path.isfile(resolved):
