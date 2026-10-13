@@ -1,7 +1,7 @@
 """
 Data Models & Telemetry Definitions for PeptidoStaple: Hydrocarbon Stapled Alpha-Helix Stability & Cell Penetration Agent.
 Domain: Computational Chemistry & AI Drug Discovery
-Standard: Verdine Hydrocarbon Stapling Geometry
+Standard: Project-defined heuristic thresholds (unvalidated)
 """
 import datetime
 from dataclasses import dataclass, field
@@ -35,7 +35,7 @@ class AgentTelemetryAlert:
     summary: str
     technical_details: str
     actionable_remediation: str
-    standard_reference: str = "Verdine Hydrocarbon Stapling Geometry"
+    standard_reference: str = "Project-defined heuristic thresholds (unvalidated)"
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:

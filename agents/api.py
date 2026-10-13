@@ -13,7 +13,7 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Peptidomimetic Stapling Agent API",
-    description="Enterprise Distributed Component Platform (AI Drug Discovery, Structural Biology & Wet-Lab Robotics)",
+    description="Generic deterministic threshold audits; not validated peptide-property predictions",
     version="3.0.0-ENTERPRISE",
 )
 
@@ -29,7 +29,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "peptidomimetic-stapling-agent", "domain": "AI Drug Discovery, Structural Biology & Wet-Lab Robotics", "standard": "wwPDB / IUPAC / OpenSMILES / ISAC Standards", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "peptidomimetic-stapling-agent", "domain": "AI Drug Discovery, Structural Biology & Wet-Lab Robotics", "standard": "Project-defined heuristic thresholds (unvalidated)", "version": "3.0.0-ENTERPRISE"}
 
 
 @app.get("/metrics")
