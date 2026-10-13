@@ -49,3 +49,27 @@ jobs:
       run: |
         python -m pip check
         python -m compileall -q agents peptido_staple
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build container
+      run: docker build -t peptidomimetic-stapling-ci .
+    - name: Verify health and representative API request
+      run: |
+        docker run -d --name peptido-ci -p 8000:8000 -e AUDIT_SECRET_KEY=ci-only-test-key peptidomimetic-stapling-ci
+        for i in $(seq 1 30); do
+          if curl -fsS http://127.0.0.1:8000/health >/dev/null; then break; fi
+          sleep 1
+        done
+        curl -fsS http://127.0.0.1:8000/health
+        curl -fsS -H 'Content-Type: application/json' \
+          -d '{"task_id":"SMOKE","target_identifier":"PEPTIDE-01","primary_metric":1,"secondary_metric":1}' \
+          http://127.0.0.1:8000/api/audit
+    - name: Container logs on failure
+      if: failure()
+      run: docker logs peptido-ci || true
+    - name: Clean up
+      if: always()
+      run: docker rm -f peptido-ci || true
