@@ -29,3 +29,6 @@ peptidomimetic-stapling-engine = "peptido_staple.cli:main"
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/peptidomimetic-stapling-agent"
 Repository = "https://github.com/abusuraihsakhri/peptidomimetic-stapling-agent.git"
+
+[tool.setuptools.packages.find]
+include = ["agents*", "peptido_staple*"]

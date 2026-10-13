@@ -44,3 +44,8 @@ jobs:
 
     - name: Browser logic unit tests
       run: node --test web/app.test.js
+
+    - name: Check installed dependencies and Python syntax
+      run: |
+        python -m pip check
+        python -m compileall -q agents peptido_staple
