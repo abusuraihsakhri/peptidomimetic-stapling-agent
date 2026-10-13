@@ -58,7 +58,7 @@ jobs:
       run: docker build -t peptidomimetic-stapling-ci .
     - name: Verify health and representative API request
       run: |
-        docker run -d --name peptido-ci -p 8000:8000 -e AUDIT_SECRET_KEY=ci-only-test-key peptidomimetic-stapling-ci
+        docker run -d --name peptido-ci -p 8000:8000 -e AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" peptidomimetic-stapling-ci
         for i in $(seq 1 30); do
           if curl -fsS http://127.0.0.1:8000/health >/dev/null; then break; fi
           sleep 1
